@@ -1,0 +1,23 @@
+# bin/smartorganize
+#
+# This is the ENTRY POINT of the program.
+# When you type "smartorganize" in your terminal, Ruby runs this file.
+#
+# The shebang (#!/usr/bin/env ruby) tells the operating system
+# "use whatever Ruby interpreter is installed" — it's portable
+# across different machines.
+#!/usr/bin/env ruby
+
+# --- Load the main library file ---
+# require_relative loads a file RELATIVE to this file's location.
+# So "../lib/smartorganize.rb" means "go up one folder, then into lib/".
+# This is how Ruby finds your code when you run the command.
+require_relative "../lib/smartorganize"
+
+# --- Run the program ---
+# SmartOrganize::CLI.new(ARGV) creates a new CLI object,
+# passing in whatever the user typed after "smartorganize".
+# ARGV is a built-in Ruby array that holds command-line arguments.
+# For example, if you type: smartorganize organize ~/Downloads
+# then ARGV = ["organize", "~/Downloads"]
+SmartOrganize::CLI.new(ARGV).run
