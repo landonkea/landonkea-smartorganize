@@ -18,32 +18,40 @@ module SmartOrganize
     # Takes ARGV (the command-line arguments array).
     def initialize(args)
       # @args is the list of words the user typed after "smartorganize"
-      # Example: smartorganize organize ~/Downloads
-      #   @args = ["organize", "~/Downloads"]
+      # Example: smartorganize organize ~/Downloads --dry-run
+      #   @args = ["organize", "~/Downloads", "--dry-run"]
       @args = args
+
+      # @flags stores command-line options (flags start with "--" or "-")
+      # These modify HOW a command runs, not WHAT command runs.
+      # Example: --dry-run, --verbose, --quiet
+      @flags = []
+
+      # @directory stores the directory path (if provided)
+      # This is the WHERE — which folder to act on.
+      @directory = nil
     end
 
     # --- run: the main entry point ---
     # This method is called from bin/smartorganize.
     # It decides what to do based on the first argument.
     def run
-      # If the user didn't type any command, show help
+      # STEP 1: Separate flags from the command and directory
+      parse_args
+
+      # STEP 2: If no command was given, show help
       if @args.empty?
         show_help
         return
       end
 
-      # .shift removes and returns the FIRST element of the array.
-      # After this, @args only contains the remaining arguments.
-      #
-      # Example:
-      #   Before: @args = ["organize", "~/Downloads"]
-      #   After:  command = "organize", @args = ["~/Downloads"]
+      # STEP 3: Get the command (first remaining argument)
       command = @args.shift
 
-      # case/when is Ruby's switch statement.
-      # Each "when" checks if the command matches a string.
-      # The "else" handles unknown commands.
+      # STEP 4: Get the directory (if provided)
+      @directory = @args.first || "."
+
+      # STEP 5: Run the command
       case command
       when "init"
         cmd_init
@@ -69,6 +77,55 @@ module SmartOrganize
 
     private
 
+    # --- parse_args: separates flags from commands ---
+    # This method goes through @args and pulls out any flags.
+    # Flags are words that start with "-" (like --dry-run or -v).
+    # Commands and directories are everything else.
+    #
+    # After parsing:
+    #   @flags = ["--dry-run", "--verbose"]
+    #   @args = ["organize", "~/Downloads"]
+    #
+    def parse_args
+      # We need to loop through @args and collect ALL flags,
+      # even if they come after the directory.
+      #
+      # Strategy: Go through each argument. If it starts with "-",
+      # it's a flag. Otherwise, it's a command/directory.
+      #
+      # We use a new array to collect non-flag arguments.
+      non_flags = []
+
+      while @args.any?
+        arg = @args.shift  # Remove the first element
+
+        if arg.start_with?("-")
+          # It's a flag — add to @flags
+          @flags.push(arg)
+        else
+          # It's not a flag — add to non_flags
+          non_flags.push(arg)
+        end
+      end
+
+      # Put the non-flag arguments back in @args
+      # Now @args only contains the command and directory
+      @args = non_flags
+    end
+
+    # --- Flag helpers ---
+    # These methods check if a specific flag was provided.
+
+    def dry_run?
+      # .any? with a block checks if ANY element in the array
+      # matches the condition. Returns true or false.
+      @flags.any? { |f| f == "--dry-run" }
+    end
+
+    def verbose?
+      @flags.any? { |f| f == "--verbose" || f == "-v" }
+    end
+
     # --- Command methods ---
     # Each "cmd_" method handles one command from the user.
 
@@ -90,36 +147,40 @@ module SmartOrganize
 
     # cmd_scan: shows what would be organized (dry run).
     def cmd_scan
-      directory = @args.first || "."
       config = Config.new
-      organizer = Organizer.new(directory, config)
+      organizer = Organizer.new(@directory, config)
 
-      puts Color.blue("Scanning #{File.expand_path(directory)}...")
+      puts Color.blue("Scanning #{File.expand_path(@directory)}...")
       puts
       organizer.stats
     end
 
     # cmd_organize: actually organizes files.
     def cmd_organize
-      directory = @args.first || "."
       config = Config.new
-      organizer = Organizer.new(directory, config)
-      organizer.organize
+      organizer = Organizer.new(@directory, config)
+
+      if dry_run?
+        # Dry run mode — show what WOULD happen, don't actually do it
+        puts Color.blue("DRY RUN — no files will be moved")
+        puts
+        organizer.stats
+      else
+        organizer.organize
+      end
     end
 
     # cmd_undo: reverses the last organize operation.
     def cmd_undo
-      directory = @args.first || "."
       config = Config.new
-      organizer = Organizer.new(directory, config)
+      organizer = Organizer.new(@directory, config)
       organizer.undo
     end
 
     # cmd_stats: shows statistics about the folder.
     def cmd_stats
-      directory = @args.first || "."
       config = Config.new
-      organizer = Organizer.new(directory, config)
+      organizer = Organizer.new(@directory, config)
       organizer.stats
     end
 
@@ -133,7 +194,7 @@ module SmartOrganize
         #{Color.bold("smartorganize v#{VERSION}")} — automatically organize files by type
 
         #{Color.bold("Usage:")}
-          smartorganize <command> [directory]
+          smartorganize <command> [directory] [options]
 
         #{Color.bold("Commands:")}
           #{Color.green("init")}                    Create a config file in the current directory
@@ -144,9 +205,14 @@ module SmartOrganize
           #{Color.dim("help")}                    Show this help message
           #{Color.dim("version")}                 Show version number
 
+        #{Color.bold("Options:")}
+          #{Color.yellow("--dry-run")}             Show what would happen without doing it
+          #{Color.yellow("--verbose")}             Show more details
+
         #{Color.bold("Examples:")}
           smartorganize scan ~/Downloads
-          smartorganize organize ~/Downloads
+          smartorganize organize ~/Downloads --dry-run
+          smartorganize organize ~/Downloads --verbose
           smartorganize undo ~/Downloads
 
         If no directory is given, uses the current folder.
