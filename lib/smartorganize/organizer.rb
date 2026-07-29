@@ -18,6 +18,20 @@ module SmartOrganize
   # This is where the real work happens.
   # Each Organizer object is tied to ONE directory (the one you're organizing).
   class Organizer
+    # UNITS is a CONSTANT — a value that never changes.
+    # WHY is it ALL_CAPS? Because that's Ruby convention.
+    # Variables use lowercase: my_variable
+    # Constants use UPPERCASE: UNITS
+    #
+    # A constant is like a variable, but Ruby warns you if you try
+    # to change it. It's a way to say "this value is fixed."
+    #
+    # UNITS is an ARRAY of strings: ["B", "KB", "MB", "GB", "TB"]
+    # Each element is a unit of measurement, from smallest to largest.
+    # We use this in format_size to convert bytes to human-readable text.
+    #
+    UNITS = ["B", "KB", "MB", "GB", "TB"].freeze
+
     # --- Initialize ---
     # Takes a directory path and a Config object.
     def initialize(directory, config)
@@ -53,14 +67,18 @@ module SmartOrganize
       # This is like a "report" — we're not moving anything yet.
       files.map do |filename|
         category = @config.extension_for(filename)
+        full_path = File.join(@directory, filename)
 
         {
           filename: filename,
           category: category || "Other",
-          source: File.join(@directory, filename),
+          source: full_path,
           # File.join is better than string concatenation because it
           # handles the "/" separator correctly on all operating systems.
           destination: File.join(@directory, category || "Other", filename),
+          # File.size returns the file size in BYTES (not KB, not MB — BYTES).
+          # 1 KB = 1,024 bytes, 1 MB = 1,024 KB, 1 GB = 1,024 MB
+          size: File.size(full_path),
         }
       end
     end
@@ -84,7 +102,7 @@ module SmartOrganize
       puts
 
       # Track statistics for the summary
-      stats = { moved: 0, categories: {} }
+      stats = { moved: 0, categories: {}, total_size: 0 }
 
       # Process each file in the plan
       plan.each do |file|
@@ -114,6 +132,7 @@ module SmartOrganize
           stats[:moved] += 1
           stats[:categories][file[:category]] ||= 0
           stats[:categories][file[:category]] += 1
+          stats[:total_size] += file[:size]
 
           # Print what we did
           puts Color.green("  #{file[:filename]} -> #{file[:category]}/")
@@ -133,7 +152,7 @@ module SmartOrganize
 
       # Print summary
       puts
-      puts Color.green("Done! Moved #{stats[:moved]} files.")
+      puts Color.green("Done! Moved #{stats[:moved]} files (#{format_size(stats[:total_size])}).")
       stats[:categories].each do |category, count|
         puts Color.dim("  #{category}: #{count} files")
       end
@@ -183,14 +202,21 @@ module SmartOrganize
       # Count files by category
       categories = plan.group_by { |f| f[:category] }
 
+      # Calculate total size
+      total_size = plan.sum { |f| f[:size] }
+
       puts Color.blue("Files in #{@directory}:")
       puts
       categories.each do |category, files|
-        puts Color.bold("  #{category}: #{files.length} files")
-        files.each { |f| puts Color.dim("    - #{f[:filename]}") }
+        # Calculate category size
+        category_size = files.sum { |f| f[:size] }
+        puts Color.bold("  #{category}: #{files.length} files (#{format_size(category_size)})")
+        files.each do |f|
+          puts Color.dim("    - #{f[:filename]} (#{format_size(f[:size])})")
+        end
       end
       puts
-      puts Color.blue("Total: #{plan.length} files to organize")
+      puts Color.blue("Total: #{plan.length} files (#{format_size(total_size)})")
     end
 
     private
@@ -201,6 +227,61 @@ module SmartOrganize
     # This uses JSON because it's human-readable and easy to parse.
     def save_log
       File.write(@log_file, JSON.pretty_generate(@moved_files))
+    end
+
+    # format_size: converts bytes to human-readable format.
+    # This is a PRIVATE method — only used inside this class.
+    #
+    # Examples:
+    #   format_size(0)          => "0 B"
+    #   format_size(1024)       => "1.0 KB"
+    #   format_size(1048576)    => "1.0 MB"
+    #   format_size(1073741824) => "1.0 GB"
+    #
+    # How it works:
+    # 1. Start with bytes
+    # 2. Divide by 1024 to get KB
+    # 3. If still too big, divide by 1024 again to get MB
+    # 4. Keep going until the number is manageable
+    # 5. Round to 1 decimal place and add the unit
+    #
+    def format_size(bytes)
+      # Return "0 B" for empty files
+      return "0 B" if bytes == 0
+
+      # UNITS is an ARRAY of strings: ["B", "KB", "MB", "GB", "TB"]
+      # Each element is the next larger unit of measurement.
+      # We use .each_with_index to get both the unit and its position.
+      #
+      # .each_with_index is like .each, but also gives you a counter.
+      # The counter starts at 0 and goes up by 1 for each element.
+      #
+      UNITS.each_with_index do |unit, index|
+        # If bytes is less than 1024, we've found our unit.
+        # Why 1024? Because 1 KB = 1024 bytes, 1 MB = 1024 KB, etc.
+        #
+        # The first time through: index = 0, unit = "B", bytes might be 512
+        # If 512 < 1024, we return "512 B"
+        #
+        # If bytes is 2048, that's > 1024, so we divide by 1024 = 2.0
+        # Next time: index = 1, unit = "KB", bytes might be 2.0
+        # If 2.0 < 1024, we return "2.0 KB"
+        #
+        if bytes < 1024
+          # .round(1) rounds to 1 decimal place
+          # Example: 2.456789.round(1) => 2.5
+          return "#{bytes.round(1)} #{unit}"
+        end
+
+        # Divide by 1024 to get the next larger unit
+        # Example: 2048 / 1024 = 2.0
+        bytes /= 1024.0
+      end
+
+      # If the file is bigger than all our units (huge file),
+      # just show the last unit with the number.
+      # This handles files bigger than 1 TB.
+      "#{bytes.round(1)} #{UNITS.last}"
     end
   end
 end

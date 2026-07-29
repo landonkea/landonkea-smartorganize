@@ -126,6 +126,10 @@ module SmartOrganize
       @flags.any? { |f| f == "--verbose" || f == "-v" }
     end
 
+    def force?
+      @flags.any? { |f| f == "--force" || f == "-f" }
+    end
+
     # --- Command methods ---
     # Each "cmd_" method handles one command from the user.
 
@@ -166,6 +170,36 @@ module SmartOrganize
         puts
         organizer.stats
       else
+        # Normal mode — ask for confirmation first
+        # UNLESS --force flag was used
+        unless force?
+          puts Color.blue("This will organize files in #{File.expand_path(@directory)}")
+          puts
+          organizer.stats
+          puts
+          print Color.yellow("Proceed? (y/n): ")
+
+          # gets reads a line of input from the user (until they press Enter)
+          # .chomp removes the trailing newline character
+          # WHY? When you type "y" and press Enter, gets returns "y\n"
+          # The \n is the newline. .chomp removes it, leaving just "y"
+          #
+          answer = gets&.chomp&.downcase
+
+          # &. is the "safe navigation operator" (also called "nil-safe dot")
+          # It works like . but returns nil if the thing before it is nil.
+          # If gets returns nil (user pressed Ctrl+D or closed terminal),
+          # gets&.chomp returns nil instead of crashing.
+          #
+          # .downcase converts to lowercase: "Y" becomes "y", "Yes" becomes "yes"
+          #
+          unless answer == "y" || answer == "yes"
+            puts Color.yellow("Cancelled.")
+            return
+          end
+          puts
+        end
+
         organizer.organize
       end
     end
@@ -208,11 +242,12 @@ module SmartOrganize
         #{Color.bold("Options:")}
           #{Color.yellow("--dry-run")}             Show what would happen without doing it
           #{Color.yellow("--verbose")}             Show more details
+          #{Color.yellow("--force")}               Skip confirmation prompt
 
         #{Color.bold("Examples:")}
           smartorganize scan ~/Downloads
           smartorganize organize ~/Downloads --dry-run
-          smartorganize organize ~/Downloads --verbose
+          smartorganize organize ~/Downloads --force
           smartorganize undo ~/Downloads
 
         If no directory is given, uses the current folder.
