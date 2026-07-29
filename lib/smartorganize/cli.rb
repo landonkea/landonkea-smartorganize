@@ -60,8 +60,8 @@ module SmartOrganize
       when "version", "--version", "-v"
         show_version
       else
-        # Unknown command — show error and help
-        warn "Unknown command: #{command}"
+        # Unknown command — show error in RED and help in normal
+        warn Color.red("Error: Unknown command '#{command}'")
         warn
         show_help
       end
@@ -77,15 +77,15 @@ module SmartOrganize
       config_path = File.join(Dir.pwd, ".smartorganize.yml")
 
       if File.exist?(config_path)
-        puts "Config file already exists at #{config_path}"
+        puts Color.yellow("Config file already exists at #{config_path}")
         return
       end
 
       # Create a default config and write it to disk
       config = Config.new
       File.write(config_path, config.to_yaml)
-      puts "Created config file: #{config_path}"
-      puts "Edit it to customize your categories."
+      puts Color.green("Created config file: #{config_path}")
+      puts Color.dim("Edit it to customize your categories.")
     end
 
     # cmd_scan: shows what would be organized (dry run).
@@ -94,7 +94,7 @@ module SmartOrganize
       config = Config.new
       organizer = Organizer.new(directory, config)
 
-      puts "Scanning #{File.expand_path(directory)}..."
+      puts Color.blue("Scanning #{File.expand_path(directory)}...")
       puts
       organizer.stats
     end
@@ -130,21 +130,21 @@ module SmartOrganize
     # The "~" strips leading whitespace, so the output is clean.
     def show_help
       puts <<~HELP
-        smartorganize v#{VERSION} — automatically organize files by type
+        #{Color.bold("smartorganize v#{VERSION}")} — automatically organize files by type
 
-        Usage:
+        #{Color.bold("Usage:")}
           smartorganize <command> [directory]
 
-        Commands:
-          init                    Create a config file in the current directory
-          scan [directory]        Show what would be organized (dry run)
-          organize [directory]    Actually organize the files
-          undo [directory]        Reverse the last organization
-          stats [directory]       Show file statistics
-          help                    Show this help message
-          version                 Show version number
+        #{Color.bold("Commands:")}
+          #{Color.green("init")}                    Create a config file in the current directory
+          #{Color.blue("scan")} [directory]        Show what would be organized (dry run)
+          #{Color.green("organize")} [directory]    Actually organize the files
+          #{Color.yellow("undo")} [directory]        Reverse the last organization
+          #{Color.blue("stats")} [directory]       Show file statistics
+          #{Color.dim("help")}                    Show this help message
+          #{Color.dim("version")}                 Show version number
 
-        Examples:
+        #{Color.bold("Examples:")}
           smartorganize scan ~/Downloads
           smartorganize organize ~/Downloads
           smartorganize undo ~/Downloads

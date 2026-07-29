@@ -14,6 +14,7 @@ module SmartOrganize
   # 3. organizer.rb — so we can organize files
   # 4. cli.rb — so we can handle command-line input
   require_relative "smartorganize/version"
+  require_relative "smartorganize/color"
   require_relative "smartorganize/config"
   require_relative "smartorganize/organizer"
   require_relative "smartorganize/cli"

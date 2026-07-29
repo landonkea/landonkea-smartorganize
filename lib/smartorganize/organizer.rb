@@ -75,12 +75,12 @@ module SmartOrganize
 
       # If nothing to organize, say so and return early
       if plan.empty?
-        puts "Nothing to organize — folder is already clean!"
+        puts Color.green("Nothing to organize — folder is already clean!")
         return { moved: 0, categories: {} }
       end
 
       # Print what we're about to do
-      puts "Organizing #{plan.length} files..."
+      puts Color.blue("Organizing #{plan.length} files...")
       puts
 
       # Track statistics for the summary
@@ -116,15 +116,15 @@ module SmartOrganize
           stats[:categories][file[:category]] += 1
 
           # Print what we did
-          puts "  #{file[:filename]} -> #{file[:category]}/"
+          puts Color.green("  #{file[:filename]} -> #{file[:category]}/")
 
         rescue Errno::EEXIST => e
           # This error means a file with the same name already exists
           # in the destination. We skip it rather than overwriting.
-          warn "  SKIP: #{file[:filename]} (already exists in #{file[:category]}/)"
+          warn Color.yellow("  SKIP: #{file[:filename]} (already exists in #{file[:category]}/)")
         rescue StandardError => e
           # Any other error — print the message and continue
-          warn "  ERROR: #{file[:filename]} — #{e.message}"
+          warn Color.red("  ERROR: #{file[:filename]} — #{e.message}")
         end
       end
 
@@ -133,9 +133,9 @@ module SmartOrganize
 
       # Print summary
       puts
-      puts "Done! Moved #{stats[:moved]} files."
+      puts Color.green("Done! Moved #{stats[:moved]} files.")
       stats[:categories].each do |category, count|
-        puts "  #{category}: #{count} files"
+        puts Color.dim("  #{category}: #{count} files")
       end
 
       stats
@@ -146,7 +146,7 @@ module SmartOrganize
     def undo
       # Check if there's a log file to undo
       unless File.exist?(@log_file)
-        puts "Nothing to undo — no log file found."
+        puts Color.yellow("Nothing to undo — no log file found.")
         return
       end
 
@@ -157,16 +157,16 @@ module SmartOrganize
       entries.reverse_each do |entry|
         begin
           FileUtils.mv(entry["from"], entry["to"])
-          puts "  Restored: #{File.basename(entry["to"])}"
+          puts Color.green("  Restored: #{File.basename(entry["to"])}")
         rescue StandardError => e
-          warn "  ERROR: #{File.basename(entry["to"])} — #{e.message}"
+          warn Color.red("  ERROR: #{File.basename(entry["to"])} — #{e.message}")
         end
       end
 
       # Remove the log file (the undo is complete)
       FileUtils.rm(@log_file)
       puts
-      puts "Undo complete! #{entries.length} files restored."
+      puts Color.green("Undo complete! #{entries.length} files restored.")
     end
 
     # stats: shows statistics about the folder.
@@ -176,21 +176,21 @@ module SmartOrganize
 
       # If folder is empty, say so
       if plan.empty?
-        puts "Folder is already organized — nothing to show."
+        puts Color.green("Folder is already organized — nothing to show.")
         return
       end
 
       # Count files by category
       categories = plan.group_by { |f| f[:category] }
 
-      puts "Files in #{@directory}:"
+      puts Color.blue("Files in #{@directory}:")
       puts
       categories.each do |category, files|
-        puts "  #{category}: #{files.length} files"
-        files.each { |f| puts "    - #{f[:filename]}" }
+        puts Color.bold("  #{category}: #{files.length} files")
+        files.each { |f| puts Color.dim("    - #{f[:filename]}") }
       end
       puts
-      puts "Total: #{plan.length} files to organize"
+      puts Color.blue("Total: #{plan.length} files to organize")
     end
 
     private
