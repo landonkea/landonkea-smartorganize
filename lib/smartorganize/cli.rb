@@ -130,6 +130,14 @@ module SmartOrganize
       @flags.any? { |f| f == "--force" || f == "-f" }
     end
 
+    def quiet?
+      @flags.any? { |f| f == "--quiet" || f == "-q" }
+    end
+
+    def recursive?
+      @flags.any? { |f| f == "--recursive" || f == "-r" }
+    end
+
     # --- Command methods ---
     # Each "cmd_" method handles one command from the user.
 
@@ -152,7 +160,7 @@ module SmartOrganize
     # cmd_scan: shows what would be organized (dry run).
     def cmd_scan
       config = Config.new
-      organizer = Organizer.new(@directory, config)
+      organizer = Organizer.new(@directory, config, recursive: recursive?)
 
       puts Color.blue("Scanning #{File.expand_path(@directory)}...")
       puts
@@ -162,7 +170,7 @@ module SmartOrganize
     # cmd_organize: actually organizes files.
     def cmd_organize
       config = Config.new
-      organizer = Organizer.new(@directory, config)
+      organizer = Organizer.new(@directory, config, recursive: recursive?)
 
       if dry_run?
         # Dry run mode — show what WOULD happen, don't actually do it
@@ -243,11 +251,14 @@ module SmartOrganize
           #{Color.yellow("--dry-run")}             Show what would happen without doing it
           #{Color.yellow("--verbose")}             Show more details
           #{Color.yellow("--force")}               Skip confirmation prompt
+          #{Color.yellow("--quiet")}               Suppress output
+          #{Color.yellow("--recursive")}           Scan subfolders too
 
         #{Color.bold("Examples:")}
           smartorganize scan ~/Downloads
           smartorganize organize ~/Downloads --dry-run
-          smartorganize organize ~/Downloads --force
+          smartorganize organize ~/Downloads --force --quiet
+          smartorganize organize ~/Downloads --recursive
           smartorganize undo ~/Downloads
 
         If no directory is given, uses the current folder.

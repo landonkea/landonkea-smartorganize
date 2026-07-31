@@ -34,11 +34,12 @@ module SmartOrganize
 
     # --- Initialize ---
     # Takes a directory path and a Config object.
-    def initialize(directory, config)
+    def initialize(directory, config, recursive: false)
       # File.expand_path converts relative paths to absolute paths.
       # "~/Downloads" becomes "/Users/landonkea/Downloads"
       @directory = File.expand_path(directory)
       @config = config
+      @recursive = recursive
 
       # @log_file is where we record every move we make.
       # This is how "undo" works — we read the log backwards.
@@ -56,30 +57,10 @@ module SmartOrganize
     #
     # Returns an array of hashes, each describing one file's fate.
     def scan
-      # Dir.children returns the names of everything in @directory.
-      # .select filters to only files (not folders).
-      # .reject filters out hidden files (names starting with ".").
-      files = Dir.children(@directory)
-                 .select { |f| File.file?(File.join(@directory, f)) }
-                 .reject { |f| f.start_with?(".") }
-
-      # .map transforms each filename into a hash describing it.
-      # This is like a "report" — we're not moving anything yet.
-      files.map do |filename|
-        category = @config.extension_for(filename)
-        full_path = File.join(@directory, filename)
-
-        {
-          filename: filename,
-          category: category || "Other",
-          source: full_path,
-          # File.join is better than string concatenation because it
-          # handles the "/" separator correctly on all operating systems.
-          destination: File.join(@directory, category || "Other", filename),
-          # File.size returns the file size in BYTES (not KB, not MB — BYTES).
-          # 1 KB = 1,024 bytes, 1 MB = 1,024 KB, 1 GB = 1,024 MB
-          size: File.size(full_path),
-        }
+      if @recursive
+        scan_recursive(@directory)
+      else
+        scan_directory(@directory)
       end
     end
 
@@ -222,6 +203,51 @@ module SmartOrganize
     private
 
     # --- Private methods ---
+
+    # scan_directory: scans a single directory (non-recursive).
+    def scan_directory(dir)
+      return [] unless File.directory?(dir)
+
+      Dir.children(dir)
+         .select { |f| File.file?(File.join(dir, f)) }
+         .reject { |f| f.start_with?(".") }
+         .map { |filename| build_file_entry(dir, filename) }
+    end
+
+    # scan_recursive: scans a directory and all its subdirectories.
+    # Uses Dir.glob with ** to find all files recursively.
+    def scan_recursive(dir)
+      return [] unless File.directory?(dir)
+
+      Dir.glob(File.join(dir, "**", "*"))
+         .select { |path| File.file?(path) }
+         .reject { |path| File.basename(path).start_with?(".") }
+         .map do |path|
+           # Get relative path from the base directory
+           relative_path = path.sub("#{dir}/", "")
+           filename = File.basename(path)
+           subdirectory = File.dirname(relative_path)
+
+           # Build the entry with the subdirectory info
+           entry = build_file_entry(dir, filename)
+           entry[:subcategory] = subdirectory == "." ? nil : subdirectory
+           entry
+         end
+    end
+
+    # build_file_entry: creates a hash describing one file.
+    def build_file_entry(dir, filename)
+      category = @config.extension_for(filename)
+      full_path = File.join(dir, filename)
+
+      {
+        filename: filename,
+        category: category || "Other",
+        source: full_path,
+        destination: File.join(dir, category || "Other", filename),
+        size: File.size(full_path),
+      }
+    end
 
     # save_log: writes the move history to a file.
     # This uses JSON because it's human-readable and easy to parse.
