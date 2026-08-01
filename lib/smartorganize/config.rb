@@ -99,7 +99,7 @@ module SmartOrganize
     # --- Private methods (can only be called from inside this class) ---
 
     # default_config_path: returns the default location for the config file.
-    # Dir.home returns the user's home directory (like "/Users/landonkea").
+    # Dir.home returns the user's home directory (like "/Users/yourname").
     def default_config_path
       File.join(Dir.home, ".smartorganize.yml")
     end

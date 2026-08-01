@@ -1,12 +1,17 @@
+#!/usr/bin/env ruby
 # bin/smartorganize
 #
 # This is the ENTRY POINT of the program.
 # When you type "smartorganize" in your terminal, Ruby runs this file.
 #
-# The shebang (#!/usr/bin/env ruby) tells the operating system
-# "use whatever Ruby interpreter is installed" — it's portable
-# across different machines.
-#!/usr/bin/env ruby
+# WHY the shebang (#!/usr/bin/env ruby) must be the very first line:
+# The operating system reads the first two bytes of an executable file
+# to decide how to run it. "#!" tells it "don't run this as a raw binary —
+# hand it to the interpreter named on this line instead." If anything
+# (even a comment) comes before it, the OS never sees "#!" as the first
+# bytes and refuses to treat the file as a script. `env ruby` means
+# "find whatever Ruby is on the PATH," which keeps this portable across
+# machines instead of hardcoding a path like /usr/bin/ruby.
 
 # --- Load the main library file ---
 # require_relative loads a file RELATIVE to this file's location.

@@ -177,39 +177,45 @@ module SmartOrganize
         puts Color.blue("DRY RUN — no files will be moved")
         puts
         organizer.stats
-      else
-        # Normal mode — ask for confirmation first
-        # UNLESS --force flag was used
-        unless force?
-          puts Color.blue("This will organize files in #{File.expand_path(@directory)}")
-          puts
-          organizer.stats
-          puts
-          print Color.yellow("Proceed? (y/n): ")
-
-          # gets reads a line of input from the user (until they press Enter)
-          # .chomp removes the trailing newline character
-          # WHY? When you type "y" and press Enter, gets returns "y\n"
-          # The \n is the newline. .chomp removes it, leaving just "y"
-          #
-          answer = gets&.chomp&.downcase
-
-          # &. is the "safe navigation operator" (also called "nil-safe dot")
-          # It works like . but returns nil if the thing before it is nil.
-          # If gets returns nil (user pressed Ctrl+D or closed terminal),
-          # gets&.chomp returns nil instead of crashing.
-          #
-          # .downcase converts to lowercase: "Y" becomes "y", "Yes" becomes "yes"
-          #
-          unless answer == "y" || answer == "yes"
-            puts Color.yellow("Cancelled.")
-            return
-          end
-          puts
-        end
-
-        organizer.organize
+        return
       end
+
+      # Normal mode — ask for confirmation first, unless --force was used.
+      # This is a separate method (confirmed?) rather than inline code here,
+      # because "does the user want to proceed?" is its own single question —
+      # keeping it out of cmd_organize keeps this method focused on ONE thing:
+      # deciding which of the three modes (dry-run / confirm / force) to run.
+      return unless force? || confirmed?(organizer)
+
+      organizer.organize
+    end
+
+    # confirmed?: shows the plan and asks "Proceed? (y/n)".
+    # Returns true if the user typed "y" or "yes", false otherwise
+    # (including if they cancelled or pressed Ctrl+D).
+    def confirmed?(organizer)
+      puts Color.blue("This will organize files in #{File.expand_path(@directory)}")
+      puts
+      organizer.stats
+      puts
+      print Color.yellow("Proceed? (y/n): ")
+
+      # gets reads a line of input from the user (until they press Enter)
+      # .chomp removes the trailing newline character
+      # WHY? When you type "y" and press Enter, gets returns "y\n"
+      # The \n is the newline. .chomp removes it, leaving just "y"
+      #
+      # &. is the "safe navigation operator" (also called "nil-safe dot")
+      # It works like . but returns nil if the thing before it is nil.
+      # If gets returns nil (user pressed Ctrl+D or closed terminal),
+      # gets&.chomp returns nil instead of crashing.
+      #
+      # .downcase converts to lowercase: "Y" becomes "y", "Yes" becomes "yes"
+      #
+      answer = gets&.chomp&.downcase
+      proceed = answer == "y" || answer == "yes"
+      puts(proceed ? "" : Color.yellow("Cancelled."))
+      proceed
     end
 
     # cmd_undo: reverses the last organize operation.

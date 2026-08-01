@@ -36,7 +36,7 @@ module SmartOrganize
     # Takes a directory path and a Config object.
     def initialize(directory, config, recursive: false)
       # File.expand_path converts relative paths to absolute paths.
-      # "~/Downloads" becomes "/Users/landonkea/Downloads"
+      # "~/Downloads" becomes "/Users/yourname/Downloads"
       @directory = File.expand_path(directory)
       @config = config
       @recursive = recursive
