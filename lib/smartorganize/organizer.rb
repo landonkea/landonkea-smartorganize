@@ -228,8 +228,13 @@ module SmartOrganize
            filename = File.basename(path)
            subdirectory = File.dirname(relative_path)
 
-           # Build the entry with the subdirectory info
-           entry = build_file_entry(dir, filename)
+           # Build the entry with the subdirectory info.
+           # NOTE: must pass the file's actual containing directory
+           # (File.dirname(path)), not the top-level `dir` — otherwise
+           # nested files resolve to a path in the base directory that
+           # doesn't exist (Errno::ENOENT) since they actually live in
+           # a subfolder.
+           entry = build_file_entry(File.dirname(path), filename)
            entry[:subcategory] = subdirectory == "." ? nil : subdirectory
            entry
          end

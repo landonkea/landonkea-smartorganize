@@ -145,7 +145,7 @@ module SmartOrganize
     def cmd_init
       config_path = File.join(Dir.pwd, ".smartorganize.yml")
 
-      if File.exist?(config_path)
+      if File.exist?(config_path) && !force?
         puts Color.yellow("Config file already exists at #{config_path}")
         return
       end
@@ -221,14 +221,14 @@ module SmartOrganize
     # cmd_undo: reverses the last organize operation.
     def cmd_undo
       config = Config.new
-      organizer = Organizer.new(@directory, config)
+      organizer = Organizer.new(@directory, config, recursive: recursive?)
       organizer.undo
     end
 
     # cmd_stats: shows statistics about the folder.
     def cmd_stats
       config = Config.new
-      organizer = Organizer.new(@directory, config)
+      organizer = Organizer.new(@directory, config, recursive: recursive?)
       organizer.stats
     end
 
@@ -245,7 +245,7 @@ module SmartOrganize
           smartorganize <command> [directory] [options]
 
         #{Color.bold("Commands:")}
-          #{Color.green("init")}                    Create a config file in the current directory
+          #{Color.green("init")} [--force]           Create a config file in the current directory
           #{Color.blue("scan")} [directory]        Show what would be organized (dry run)
           #{Color.green("organize")} [directory]    Actually organize the files
           #{Color.yellow("undo")} [directory]        Reverse the last organization
