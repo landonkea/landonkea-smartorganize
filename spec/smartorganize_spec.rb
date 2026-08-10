@@ -1,7 +1,7 @@
 # spec/smartorganize_spec.rb
 #
-# This is the TEST FILE — it verifies that our code works correctly.
-# Tests are written BEFORE bugs appear — they catch problems early.
+# This is the TEST FILE, it verifies that our code works correctly.
+# Tests are written BEFORE bugs appear, they catch problems early.
 #
 # Minitest is Ruby's built-in test framework. It's simple and fast.
 # We use "assert" methods to check that our code does what we expect.
@@ -12,7 +12,7 @@ require "stringio"
 require "smartorganize"
 
 # --- Test class ---
-# The class name must end with "Test" — Minitest looks for this.
+# The class name must end with "Test", Minitest looks for this.
 # It inherits from Minitest::Test, which gives us all the assert methods.
 class SmartOrganizeTest < Minitest::Test
   # --- setup: runs before EACH test method ---

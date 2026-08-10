@@ -1,4 +1,4 @@
-# landonkea-smartorganize — Design & Workflow
+# landonkea-smartorganize - Design & Workflow
 
 ## High-Level Overview
 

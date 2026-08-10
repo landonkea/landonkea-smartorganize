@@ -1,6 +1,6 @@
 # lib/smartorganize/config.rb
 #
-# This file handles CONFIGURATION — the user's settings.
+# This file handles CONFIGURATION, the user's settings.
 # It reads a YAML file (like .smartorganize.yml) and turns it into
 # Ruby data structures we can use.
 #
@@ -32,7 +32,7 @@ module SmartOrganize
     #   - Each KEY is a category name (like "Documents")
     #   - Each VALUE is an array of file extensions (like ["pdf", "doc", "txt"])
     #
-    # The "freeze" method makes the hash IMMUTABLE — you can't change it
+    # The "freeze" method makes the hash IMMUTABLE, you can't change it
     # at runtime. This prevents accidental modification.
     DEFAULT_CATEGORIES = {
       "Documents" => %w[pdf doc docx txt md rtf odt pages],
@@ -49,11 +49,11 @@ module SmartOrganize
     # The "initialize" method runs when you do Config.new.
     # It takes an optional path to a config file.
     #
-    # The "?:" is called the "ternary operator" — it's a shorthand for if/else:
+    # The "?:" is called the "ternary operator", it's a shorthand for if/else:
     #   path ? path : default_path
     # means "if path was given, use it; otherwise use default_path"
     def initialize(path = nil)
-      # @path is an INSTANCE VARIABLE — it belongs to this specific
+      # @path is an INSTANCE VARIABLE, it belongs to this specific
       # Config object. Other objects can't see it unless we give them access.
       @path = path || default_config_path
 
@@ -111,7 +111,7 @@ module SmartOrganize
       user_config = YAML.safe_load(File.read(@path))
 
       # If the file has a "categories" section, merge it with defaults.
-      # .merge means "combine the two hashes — user settings override defaults"
+      # .merge means "combine the two hashes, user settings override defaults"
       if user_config.is_a?(Hash) && user_config["categories"]
         @categories = DEFAULT_CATEGORIES.merge(user_config["categories"])
       end

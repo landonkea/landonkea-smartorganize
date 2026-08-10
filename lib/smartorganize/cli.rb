@@ -1,6 +1,6 @@
 # lib/smartorganize/cli.rb
 #
-# This is the USER INTERFACE — the part that talks to the human.
+# This is the USER INTERFACE, the part that talks to the human.
 # It reads what the user typed, figures out what they want to do,
 # and calls the right Organizer method.
 #
@@ -28,7 +28,7 @@ module SmartOrganize
       @flags = []
 
       # @directory stores the directory path (if provided)
-      # This is the WHERE — which folder to act on.
+      # This is the WHERE, which folder to act on.
       @directory = nil
     end
 
@@ -68,7 +68,7 @@ module SmartOrganize
       when "version", "--version", "-v"
         show_version
       else
-        # Unknown command — show error in RED and help in normal
+        # Unknown command, show error in RED and help in normal
         warn Color.red("Error: Unknown command '#{command}'")
         warn
         show_help
@@ -100,10 +100,10 @@ module SmartOrganize
         arg = @args.shift  # Remove the first element
 
         if arg.start_with?("-")
-          # It's a flag — add to @flags
+          # It's a flag, add to @flags
           @flags.push(arg)
         else
-          # It's not a flag — add to non_flags
+          # It's not a flag, add to non_flags
           non_flags.push(arg)
         end
       end
@@ -173,16 +173,16 @@ module SmartOrganize
       organizer = Organizer.new(@directory, config, recursive: recursive?)
 
       if dry_run?
-        # Dry run mode — show what WOULD happen, don't actually do it
-        puts Color.blue("DRY RUN — no files will be moved")
+        # Dry run mode, show what WOULD happen, don't actually do it
+        puts Color.blue("DRY RUN, no files will be moved")
         puts
         organizer.stats
         return
       end
 
-      # Normal mode — ask for confirmation first, unless --force was used.
+      # Normal mode, ask for confirmation first, unless --force was used.
       # This is a separate method (confirmed?) rather than inline code here,
-      # because "does the user want to proceed?" is its own single question —
+      # because "does the user want to proceed?" is its own single question,
       # keeping it out of cmd_organize keeps this method focused on ONE thing:
       # deciding which of the three modes (dry-run / confirm / force) to run.
       return unless force? || confirmed?(organizer)
@@ -239,7 +239,7 @@ module SmartOrganize
     # The "~" strips leading whitespace, so the output is clean.
     def show_help
       puts <<~HELP
-        #{Color.bold("smartorganize v#{VERSION}")} — automatically organize files by type
+        #{Color.bold("smartorganize v#{VERSION}")}, automatically organize files by type
 
         #{Color.bold("Usage:")}
           smartorganize <command> [directory] [options]

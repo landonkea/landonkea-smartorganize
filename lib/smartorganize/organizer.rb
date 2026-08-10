@@ -1,6 +1,6 @@
 # lib/smartorganize/organizer.rb
 #
-# This is the CORE LOGIC — the engine that actually organizes files.
+# This is the CORE LOGIC, the engine that actually organizes files.
 # Everything else (CLI, config) exists to support this class.
 #
 # The Organizer class:
@@ -18,7 +18,7 @@ module SmartOrganize
   # This is where the real work happens.
   # Each Organizer object is tied to ONE directory (the one you're organizing).
   class Organizer
-    # UNITS is a CONSTANT — a value that never changes.
+    # UNITS is a CONSTANT, a value that never changes.
     # WHY is it ALL_CAPS? Because that's Ruby convention.
     # Variables use lowercase: my_variable
     # Constants use UPPERCASE: UNITS
@@ -42,18 +42,18 @@ module SmartOrganize
       @recursive = recursive
 
       # @log_file is where we record every move we make.
-      # This is how "undo" works — we read the log backwards.
+      # This is how "undo" works, we read the log backwards.
       @log_file = File.join(@directory, ".smartorganize.log")
 
       # @moved_files tracks what we move in this session.
-      # It starts as an empty array — we'll push each move into it.
+      # It starts as an empty array, we'll push each move into it.
       @moved_files = []
     end
 
     # --- Public methods ---
 
     # scan: looks at all files and shows what WOULD be moved.
-    # This is the "dry run" — nothing actually changes on disk.
+    # This is the "dry run", nothing actually changes on disk.
     #
     # Returns an array of hashes, each describing one file's fate.
     def scan
@@ -65,7 +65,7 @@ module SmartOrganize
     end
 
     # organize: actually moves files into categorized subfolders.
-    # This is the "real" action — files WILL be moved on disk.
+    # This is the "real" action, files WILL be moved on disk.
     #
     # Returns a summary of what was done.
     def organize
@@ -74,7 +74,7 @@ module SmartOrganize
 
       # If nothing to organize, say so and return early
       if plan.empty?
-        puts Color.green("Nothing to organize — folder is already clean!")
+        puts Color.green("Nothing to organize, folder is already clean!")
         return { moved: 0, categories: {} }
       end
 
@@ -123,8 +123,8 @@ module SmartOrganize
           # in the destination. We skip it rather than overwriting.
           warn Color.yellow("  SKIP: #{file[:filename]} (already exists in #{file[:category]}/)")
         rescue StandardError => e
-          # Any other error — print the message and continue
-          warn Color.red("  ERROR: #{file[:filename]} — #{e.message}")
+          # Any other error, print the message and continue
+          warn Color.red("  ERROR: #{file[:filename]}, #{e.message}")
         end
       end
 
@@ -146,7 +146,7 @@ module SmartOrganize
     def undo
       # Check if there's a log file to undo
       unless File.exist?(@log_file)
-        puts Color.yellow("Nothing to undo — no log file found.")
+        puts Color.yellow("Nothing to undo, no log file found.")
         return
       end
 
@@ -159,7 +159,7 @@ module SmartOrganize
           FileUtils.mv(entry["from"], entry["to"])
           puts Color.green("  Restored: #{File.basename(entry["to"])}")
         rescue StandardError => e
-          warn Color.red("  ERROR: #{File.basename(entry["to"])} — #{e.message}")
+          warn Color.red("  ERROR: #{File.basename(entry["to"])}, #{e.message}")
         end
       end
 
@@ -176,7 +176,7 @@ module SmartOrganize
 
       # If folder is empty, say so
       if plan.empty?
-        puts Color.green("Folder is already organized — nothing to show.")
+        puts Color.green("Folder is already organized, nothing to show.")
         return
       end
 
@@ -230,7 +230,7 @@ module SmartOrganize
 
            # Build the entry with the subdirectory info.
            # NOTE: must pass the file's actual containing directory
-           # (File.dirname(path)), not the top-level `dir` — otherwise
+           # (File.dirname(path)), not the top-level `dir`, otherwise
            # nested files resolve to a path in the base directory that
            # doesn't exist (Errno::ENOENT) since they actually live in
            # a subfolder.
@@ -261,7 +261,7 @@ module SmartOrganize
     end
 
     # format_size: converts bytes to human-readable format.
-    # This is a PRIVATE method — only used inside this class.
+    # This is a PRIVATE method, only used inside this class.
     #
     # Examples:
     #   format_size(0)          => "0 B"

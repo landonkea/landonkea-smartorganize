@@ -17,7 +17,7 @@ module SmartOrganize
   # After we're done with colored text, we use \e[0m to "reset" back to
   # normal (no color).
   #
-  # The \e is an "escape character." It's not the letter 'e' — it's a
+  # The \e is an "escape character." It's not the letter 'e', it's a
   # special non-printable character (ASCII code 27, or 0x1B in hex).
   # The terminal recognizes this character as the start of an escape sequence.
   #
@@ -67,7 +67,7 @@ module SmartOrganize
     # this module. You can only use it inside the Color module's own methods.
     # WHY? Because `colorize` is an IMPLEMENTATION DETAIL. Users of Color
     # should use `.red("text")`, not `.colorize("text", 31)` directly.
-    # This is the "private methods" concept — hide the plumbing.
+    # This is the "private methods" concept, hide the plumbing.
 
     # `colorize` is the CORE METHOD that all the color methods use.
     # Instead of repeating the escape code logic in every method,
@@ -75,8 +75,8 @@ module SmartOrganize
     # This is the DRY principle: Don't Repeat Yourself.
     #
     # Parameters:
-    #   text — the string to colorize
-    #   code — the ANSI color code number (31 for red, 32 for green, etc.)
+    #   text, the string to colorize
+    #   code, the ANSI color code number (31 for red, 32 for green, etc.)
     #
     # Returns: a string wrapped in ANSI escape codes, like "\e[31mHello\e[0m"
     #
