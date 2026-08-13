@@ -1,0 +1,76 @@
+name: Release (RubyGems + GitHub Release)
+
+# Fires when a stable tag lands, e.g. v0.2.0 (but not v0.2.0-rc.1,
+# that's handled by prerelease.yml instead). See RELEASING.md.
+on:
+  push:
+    tags:
+      - "v*"
+      - "!v*-rc*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Confirm the tagged commit is on main
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "This tag's commit isn't on main. Stable releases have to be tagged from main, see RELEASING.md."
+            exit 1
+          fi
+
+      - name: Run tests
+        run: ruby -Ilib -Ispec spec/smartorganize_spec.rb
+
+      - name: Read gem version from source
+        run: |
+          VERSION=$(ruby -Ilib -e 'require "smartorganize/version"; print SmartOrganize::VERSION')
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Verify the tag matches lib/smartorganize/version.rb
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$TAG_VERSION" != "$VERSION" ]; then
+            echo "Tag $GITHUB_REF_NAME doesn't match VERSION in lib/smartorganize/version.rb ($VERSION)."
+            echo "Update version.rb, commit, and re-tag before pushing again."
+            exit 1
+          fi
+
+      - name: Verify this is a stable version, not a pre-release
+        run: |
+          IS_PRE=$(ruby -e 'print Gem::Version.new(ARGV[0]).prerelease?' "$VERSION")
+          if [ "$IS_PRE" != "false" ]; then
+            echo "VERSION ($VERSION) looks like a pre-release. Stable releases need a plain X.Y.Z version."
+            exit 1
+          fi
+
+      - name: Build the gem
+        run: gem build smartorganize.gemspec
+
+      - name: Push to RubyGems
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: gem push smartorganize-*.gem
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" smartorganize-*.gem \
+            --title "v$VERSION" \
+            --generate-notes

@@ -1,0 +1,56 @@
+name: Pre-release (RubyGems RC)
+
+# Fires when an rc tag lands, e.g. v0.2.0-rc.1. See RELEASING.md.
+on:
+  push:
+    tags:
+      - "v*-rc*"
+
+permissions:
+  contents: read
+
+jobs:
+  publish-prerelease:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Run tests
+        run: ruby -Ilib -Ispec spec/smartorganize_spec.rb
+
+      - name: Read gem version from source
+        run: |
+          VERSION=$(ruby -Ilib -e 'require "smartorganize/version"; print SmartOrganize::VERSION')
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Verify the tag matches lib/smartorganize/version.rb
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$TAG_VERSION" != "$VERSION" ]; then
+            echo "Tag $GITHUB_REF_NAME doesn't match VERSION in lib/smartorganize/version.rb ($VERSION)."
+            echo "Update version.rb, commit, and re-tag before pushing again."
+            exit 1
+          fi
+
+      - name: Verify this is actually a pre-release version
+        run: |
+          IS_PRE=$(ruby -e 'print Gem::Version.new(ARGV[0]).prerelease?' "$VERSION")
+          if [ "$IS_PRE" != "true" ]; then
+            echo "VERSION ($VERSION) doesn't parse as a pre-release. Expected something like 0.2.0-rc.1."
+            exit 1
+          fi
+
+      - name: Build the gem
+        run: gem build smartorganize.gemspec
+
+      - name: Push pre-release to RubyGems
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: gem push smartorganize-*.gem
