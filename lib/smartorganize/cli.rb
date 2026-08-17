@@ -160,22 +160,26 @@ module SmartOrganize
     # cmd_scan: shows what would be organized (dry run).
     def cmd_scan
       config = Config.new
-      organizer = Organizer.new(@directory, config, recursive: recursive?)
+      organizer = Organizer.new(@directory, config, recursive: recursive?, quiet: quiet?)
 
-      puts Color.blue("Scanning #{File.expand_path(@directory)}...")
-      puts
+      unless quiet?
+        puts Color.blue("Scanning #{File.expand_path(@directory)}...")
+        puts
+      end
       organizer.stats
     end
 
     # cmd_organize: actually organizes files.
     def cmd_organize
       config = Config.new
-      organizer = Organizer.new(@directory, config, recursive: recursive?)
+      organizer = Organizer.new(@directory, config, recursive: recursive?, quiet: quiet?)
 
       if dry_run?
         # Dry run mode, show what WOULD happen, don't actually do it
-        puts Color.blue("DRY RUN, no files will be moved")
-        puts
+        unless quiet?
+          puts Color.blue("DRY RUN, no files will be moved")
+          puts
+        end
         organizer.stats
         return
       end
@@ -221,14 +225,14 @@ module SmartOrganize
     # cmd_undo: reverses the last organize operation.
     def cmd_undo
       config = Config.new
-      organizer = Organizer.new(@directory, config, recursive: recursive?)
+      organizer = Organizer.new(@directory, config, recursive: recursive?, quiet: quiet?)
       organizer.undo
     end
 
     # cmd_stats: shows statistics about the folder.
     def cmd_stats
       config = Config.new
-      organizer = Organizer.new(@directory, config, recursive: recursive?)
+      organizer = Organizer.new(@directory, config, recursive: recursive?, quiet: quiet?)
       organizer.stats
     end
 

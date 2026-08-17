@@ -34,12 +34,13 @@ module SmartOrganize
 
     # --- Initialize ---
     # Takes a directory path and a Config object.
-    def initialize(directory, config, recursive: false)
+    def initialize(directory, config, recursive: false, quiet: false)
       # File.expand_path converts relative paths to absolute paths.
       # "~/Downloads" becomes "/Users/yourname/Downloads"
       @directory = File.expand_path(directory)
       @config = config
       @recursive = recursive
+      @quiet = quiet
 
       # @log_file is where we record every move we make.
       # This is how "undo" works, we read the log backwards.
@@ -74,13 +75,13 @@ module SmartOrganize
 
       # If nothing to organize, say so and return early
       if plan.empty?
-        puts Color.green("Nothing to organize, folder is already clean!")
+        log Color.green("Nothing to organize, folder is already clean!")
         return { moved: 0, categories: {} }
       end
 
       # Print what we're about to do
-      puts Color.blue("Organizing #{plan.length} files...")
-      puts
+      log Color.blue("Organizing #{plan.length} files...")
+      log
 
       # Track statistics for the summary
       stats = { moved: 0, categories: {}, total_size: 0 }
@@ -116,7 +117,7 @@ module SmartOrganize
           stats[:total_size] += file[:size]
 
           # Print what we did
-          puts Color.green("  #{file[:filename]} -> #{file[:category]}/")
+          log Color.green("  #{file[:filename]} -> #{file[:category]}/")
 
         rescue Errno::EEXIST => e
           # This error means a file with the same name already exists
@@ -132,10 +133,10 @@ module SmartOrganize
       save_log
 
       # Print summary
-      puts
-      puts Color.green("Done! Moved #{stats[:moved]} files (#{format_size(stats[:total_size])}).")
+      log
+      log Color.green("Done! Moved #{stats[:moved]} files (#{format_size(stats[:total_size])}).")
       stats[:categories].each do |category, count|
-        puts Color.dim("  #{category}: #{count} files")
+        log Color.dim("  #{category}: #{count} files")
       end
 
       stats
@@ -146,7 +147,7 @@ module SmartOrganize
     def undo
       # Check if there's a log file to undo
       unless File.exist?(@log_file)
-        puts Color.yellow("Nothing to undo, no log file found.")
+        log Color.yellow("Nothing to undo, no log file found.")
         return
       end
 
@@ -157,7 +158,7 @@ module SmartOrganize
       entries.reverse_each do |entry|
         begin
           FileUtils.mv(entry["from"], entry["to"])
-          puts Color.green("  Restored: #{File.basename(entry["to"])}")
+          log Color.green("  Restored: #{File.basename(entry["to"])}")
         rescue StandardError => e
           warn Color.red("  ERROR: #{File.basename(entry["to"])}, #{e.message}")
         end
@@ -165,8 +166,8 @@ module SmartOrganize
 
       # Remove the log file (the undo is complete)
       FileUtils.rm(@log_file)
-      puts
-      puts Color.green("Undo complete! #{entries.length} files restored.")
+      log
+      log Color.green("Undo complete! #{entries.length} files restored.")
     end
 
     # stats: shows statistics about the folder.
@@ -176,7 +177,7 @@ module SmartOrganize
 
       # If folder is empty, say so
       if plan.empty?
-        puts Color.green("Folder is already organized, nothing to show.")
+        log Color.green("Folder is already organized, nothing to show.")
         return
       end
 
@@ -186,23 +187,33 @@ module SmartOrganize
       # Calculate total size
       total_size = plan.sum { |f| f[:size] }
 
-      puts Color.blue("Files in #{@directory}:")
-      puts
+      log Color.blue("Files in #{@directory}:")
+      log
       categories.each do |category, files|
         # Calculate category size
         category_size = files.sum { |f| f[:size] }
-        puts Color.bold("  #{category}: #{files.length} files (#{format_size(category_size)})")
+        log Color.bold("  #{category}: #{files.length} files (#{format_size(category_size)})")
         files.each do |f|
-          puts Color.dim("    - #{f[:filename]} (#{format_size(f[:size])})")
+          log Color.dim("    - #{f[:filename]} (#{format_size(f[:size])})")
         end
       end
-      puts
-      puts Color.blue("Total: #{plan.length} files (#{format_size(total_size)})")
+      log
+      log Color.blue("Total: #{plan.length} files (#{format_size(total_size)})")
     end
 
     private
 
     # --- Private methods ---
+
+    # log: prints an informational line, unless --quiet was passed.
+    # Errors/warnings use Ruby's own `warn` (stderr) directly instead,
+    # not this method, those stay visible even in quiet mode, same
+    # convention this project's other tools (file-organizer.py/.js)
+    # already use: quiet suppresses progress/summary chatter, not
+    # problems the user actually needs to see.
+    def log(message = "")
+      puts message unless @quiet
+    end
 
     # scan_directory: scans a single directory (non-recursive).
     def scan_directory(dir)
